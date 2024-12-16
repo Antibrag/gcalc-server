@@ -83,9 +83,13 @@ func GetExampleNew(ex string) (Example, error) {
 	if strings.ContainsRune(ex, '(') || strings.ContainsRune(ex, ')') {
 		op_bracket, cl_bracket := strings.IndexRune(ex, '('), strings.IndexRune(ex, ')')
 
+		//TODO: Исправить не нахождение последней скобки
+		//* Пример ошибки: GetExample("(10+30+(20+1*10))+1") got "(10+30+(20+1*10)", but expected "(10+30+(20+1*10))"
+
 		if (op_bracket == -1 && cl_bracket != -1) || (op_bracket != -1 && cl_bracket == -1) {
 			return Example{}, BracketsNotFound
 		}
+
 		return Example{String: ex[op_bracket : cl_bracket+1]}, nil
 	}
 
@@ -100,10 +104,6 @@ func GetExampleNew(ex string) (Example, error) {
 			return Example{Second_value: value, Operation: Equals}, nil
 		}
 	}
-
-	/*	Formula for finding length of values
-	*	first_value_len = [first_value_idx : operator_idx]
-	*	second_value_len = [operator_idx+1 : second_value_idx+1 */
 
 	first_value_idx, second_value_idx, err := getValuesIdx(ex, operator_idx)
 	if err != nil {
@@ -129,9 +129,7 @@ func GetExampleNew(ex string) (Example, error) {
 	return new_ex, nil
 }
 
-// * Заменяет выражение на его ответ
-// ! Реализация данной функции довольно таки херовая
-// ! Для оптимизации можно будет попробовать превратить в такую строку где не требуется постоянная замена
+// TODO: Удалить нахер эту поеботу
 func GetExample(example string) (string, int, Example, error) {
 	var ex Example
 	var local_ex string = example
