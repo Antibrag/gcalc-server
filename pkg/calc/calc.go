@@ -32,30 +32,101 @@ type Example struct {
 	First_value  float64
 	Second_value float64
 	Operation    Operator
+	String       string
 }
 
-func (ex Example) ToString() string {
-	return fmt.Sprint(ex.First_value, ex.Operation, ex.Second_value)
+/*
+Return indexs first and second number value
+
+If index first and second value = operator index - return error (OperationWithoutValue)
+*/
+func getValuesIdx(example_str string, operator_idx int) (first_value_idx int, second_value_idx int, err error) {
+	first_value_idx, second_value_idx = operator_idx-1, operator_idx+1
+
+	// Get first value index
+	for ; first_value_idx != 0; first_value_idx-- {
+		ex_rune := example_str[first_value_idx]
+		if ex_rune == '+' || ex_rune == '-' || ex_rune == '*' || ex_rune == '/' {
+			first_value_idx++
+			break
+		}
+	}
+
+	if operator_idx == first_value_idx {
+		return 0, 0, OperationWithoutValue
+	}
+
+	// Get second value index
+	for ; second_value_idx < len(example_str)-1; second_value_idx++ {
+		ex_rune := example_str[second_value_idx]
+		if ex_rune == '+' || ex_rune == '-' || ex_rune == '*' || ex_rune == '/' {
+			second_value_idx--
+			break
+		}
+	}
+
+	if operator_idx == second_value_idx {
+		return 0, 0, OperationWithoutValue
+	}
+	return
 }
 
-func SolveExample(ex Example) (float64, error) {
-	if ex.Second_value == 0 {
-		return 0, DivideByZero
+func GetExampleNew(ex string) (Example, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("GetExampleNew():", err)
+		}
+	}()
+
+	var operator_idx int
+
+	if strings.ContainsRune(ex, '(') || strings.ContainsRune(ex, ')') {
+		op_bracket, cl_bracket := strings.IndexRune(ex, '('), strings.IndexRune(ex, ')')
+
+		if (op_bracket == -1 && cl_bracket != -1) || (op_bracket != -1 && cl_bracket == -1) {
+			return Example{}, BracketsNotFound
+		}
+		return Example{String: ex[op_bracket : cl_bracket+1]}, nil
 	}
 
-	switch ex.Operation {
-	case Plus:
-		return ex.First_value + ex.Second_value, nil
-	case Minus:
-		return ex.First_value - ex.Second_value, nil
-	case Multiply:
-		return ex.First_value * ex.Second_value, nil
-	case Division:
-		return ex.First_value / ex.Second_value, nil
-	case Equals:
-		return ex.First_value, nil
+	operator_idx = strings.IndexAny(ex, "*/")
+	if operator_idx == -1 {
+		operator_idx = strings.IndexAny(ex, "+-")
+		if operator_idx == -1 {
+			value, err := strconv.ParseFloat(ex, 64)
+			if err != nil {
+				return Example{}, ParseError
+			}
+			return Example{Second_value: value, Operation: Equals}, nil
+		}
 	}
-	return 0, UnkownOperator
+
+	/*	Formula for finding length of values
+	*	first_value_len = [first_value_idx : operator_idx]
+	*	second_value_len = [operator_idx+1 : second_value_idx+1 */
+
+	first_value_idx, second_value_idx, err := getValuesIdx(ex, operator_idx)
+	if err != nil {
+		return Example{}, err
+	}
+
+	first_value, err := strconv.ParseFloat(ex[first_value_idx:operator_idx], 64)
+	if err != nil {
+		return Example{}, ParseError
+	}
+
+	second_value, err := strconv.ParseFloat(ex[operator_idx+1:second_value_idx+1], 64)
+	if err != nil {
+		return Example{}, ParseError
+	}
+
+	new_ex := Example{
+		First_value:  first_value,
+		Second_value: second_value,
+		Operation:    Operator(ex[operator_idx]),
+		String:       ex[first_value_idx : second_value_idx+1],
+	}
+	return new_ex, nil
 }
 
 // * Заменяет выражение на его ответ
@@ -156,6 +227,26 @@ func GetExample(example string) (string, int, Example, error) {
 	}
 
 	return local_ex[begin:end], strings.IndexRune(example, rune(local_ex[0])), ex, nil
+}
+
+func SolveExample(ex Example) (float64, error) {
+	if ex.Second_value == 0 {
+		return 0, DivideByZero
+	}
+
+	switch ex.Operation {
+	case Plus:
+		return ex.First_value + ex.Second_value, nil
+	case Minus:
+		return ex.First_value - ex.Second_value, nil
+	case Multiply:
+		return ex.First_value * ex.Second_value, nil
+	case Division:
+		return ex.First_value / ex.Second_value, nil
+	case Equals:
+		return ex.First_value, nil
+	}
+	return 0, UnkownOperator
 }
 
 func EraseExample(example, erase_ex string, pri_idx int, answ float64) string {
