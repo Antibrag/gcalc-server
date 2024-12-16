@@ -64,75 +64,68 @@ func TestSolveExample(t *testing.T) {
 
 func TestGetExample(t *testing.T) {
 	cases := []struct {
-		name           string
-		example        string
-		expected_str   string
-		expected_value float64
-		expected_err   bool
+		name         string
+		example      string
+		expected_str string
+		expected_err error
 	}{
 		{
-			name:           "1+1",
-			example:        "1+1",
-			expected_str:   "1+1",
-			expected_value: 2,
+			name:         "1+1",
+			example:      "1+1",
+			expected_str: "1+1",
 		},
 		{
-			name:           "1+145",
-			example:        "1+145",
-			expected_str:   "1+145",
-			expected_value: 146,
+			name:         "1+145",
+			example:      "1+145",
+			expected_str: "1+145",
 		},
 		{
-			name:           "10+10+10+10",
-			example:        "10+10",
-			expected_str:   "10+10",
-			expected_value: 20,
+			name:         "10+10+10+10",
+			example:      "10+10",
+			expected_str: "10+10",
 		},
 		{
-			name:           "1+145*10",
-			example:        "1+145*10",
-			expected_str:   "145*10",
-			expected_value: 1450,
+			name:         "1+145*10",
+			example:      "1+145*10",
+			expected_str: "145*10",
 		},
 		{
-			name:           "(1)",
-			example:        "(1)",
-			expected_str:   "(1)",
-			expected_value: 1,
+			name:         "(1)",
+			example:      "(1)",
+			expected_str: "(1)",
 		},
 		{
-			name:           "(112+1)+145*10",
-			example:        "(112+1)+145*10",
-			expected_str:   "112+1",
-			expected_value: 113,
+			name:         "(112+1)+145*10",
+			example:      "(112+1)+145*10",
+			expected_str: "(112+1)",
 		},
 		{
-			name:           "(10+30+(20+1*10))+1",
-			example:        "(10+30+(20+1*10))+1",
-			expected_str:   "1*10",
-			expected_value: 10,
+			name:         "(10+30+(20+1*10))+1",
+			example:      "(10+30+(20+1*10))+1",
+			expected_str: "(10+30+(20+1*10))",
 		},
 		{
-			name:           "1+1-(2.000000)",
-			example:        "1+1-(2.000000)",
-			expected_str:   "(2.000000)",
-			expected_value: 2,
+			name:         "1+1-(2.000000)",
+			example:      "1+1-(2.000000)",
+			expected_str: "(2.000000)",
 		},
 		{
-			name:           "52",
-			example:        "52",
-			expected_str:   "end",
-			expected_value: 52,
+			name:         "52",
+			example:      "52",
+			expected_str: "",
 		},
 	}
 
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
-			got, _, ex, _ := calc.GetExample(test.example)
-			value, _ := calc.SolveExample(ex)
-			if got != test.expected_str || value != test.expected_value {
-				t.Logf("GetExample(%q).ex = %#v", test.example, ex)
-				t.Errorf("GetExample(%q) = (%q, %f), but expected: (%q, %f)", test.example, got, value, test.expected_str, test.expected_value)
+			got, err := calc.GetExampleNew(test.example)
+			if !errors.Is(err, test.expected_err) {
+				t.Errorf("GetExample(%s) got error %q, but expected %q", test.example, err, test.expected_err)
+				return
+			}
+
+			if got.String != test.expected_str {
+				t.Errorf("GetExample(%q) got %q, but expected %q", test.example, got.String, test.expected_str)
 			}
 		})
 	}
