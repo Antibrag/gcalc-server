@@ -114,6 +114,7 @@ func TestGetExample(t *testing.T) {
 			example:      "52",
 			expected_str: "",
 		},
+		//TODO: Сделать тест на ошибку OperationWithoutValue
 	}
 
 	for _, test := range cases {
