@@ -21,11 +21,11 @@ const (
 
 var (
 	DivideByZero          error = errors.New("divide by zero")
-	UnkownOperator        error = errors.New("unkown operator") //TODO: Убрать неиспользуемую ошибку
 	ExpressionEmpty       error = errors.New("expression empty")
 	OperationWithoutValue error = errors.New("operation dont have a value")
 	BracketsNotFound      error = errors.New("not found opened or closed bracket")
 	ParseError            error = errors.New("parse error")
+	UnexpextedError       error = errors.New("unexpected error")
 )
 
 type Example struct {
@@ -228,7 +228,7 @@ func GetExample(example string) (string, int, Example, error) {
 }
 
 func SolveExample(ex Example) (float64, error) {
-	if ex.Second_value == 0 {
+	if ex.Second_value == 0 && ex.Operation == Division {
 		return 0, DivideByZero
 	}
 
@@ -244,7 +244,7 @@ func SolveExample(ex Example) (float64, error) {
 	case Equals:
 		return ex.First_value, nil
 	}
-	return 0, UnkownOperator //TODO: Убрать неиспользуемую ошибку
+	return 0, UnexpextedError
 }
 
 func EraseExample(example, erase_ex string, pri_idx int, answ float64) string {

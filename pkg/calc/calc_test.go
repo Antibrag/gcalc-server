@@ -33,12 +33,6 @@ func TestSolveExample(t *testing.T) {
 			expected_err: calc.DivideByZero,
 		},
 		{
-			name:         "unkown operator",
-			example:      calc.Example{First_value: 1, Second_value: 1, Operation: '&'},
-			expected:     0,
-			expected_err: calc.UnkownOperator,
-		},
-		{
 			name:         "123 + 10",
 			example:      calc.Example{First_value: 123, Second_value: 10, Operation: calc.Plus},
 			expected:     133,
@@ -114,7 +108,12 @@ func TestGetExample(t *testing.T) {
 			example:      "52",
 			expected_str: "",
 		},
-		//TODO: Сделать тест на ошибку OperationWithoutValue
+		{
+			name:         "operation withot value",
+			example:      "+1",
+			expected_str: "",
+			expected_err: calc.OperationWithoutValue,
+		},
 	}
 
 	for _, test := range cases {
