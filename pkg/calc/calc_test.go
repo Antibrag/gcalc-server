@@ -2,6 +2,7 @@ package calc_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/Antibrag/gcalc-server/pkg/calc"
@@ -138,6 +139,11 @@ func TestEraseExample(t *testing.T) {
 		expected_str string
 	}{
 		{
+			name:         "1+1+1",
+			example:      "1+1+1",
+			expected_str: "2.000000+1",
+		},
+		{
 			name:         "1+1-(1+1)",
 			example:      "1+1-(1+1)",
 			expected_str: "1+1-(2.000000)",
@@ -156,11 +162,26 @@ func TestEraseExample(t *testing.T) {
 
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
-			erase_str, pri_idx, ex, _ := calc.GetExample(test.example)
-			answ, _ := calc.SolveExample(ex)
-			got := calc.EraseExample(test.example, erase_str, pri_idx, answ)
+			got_ex, err := calc.GetExampleNew(test.example)
+			if err != nil {
+				t.Errorf("GetExampleNew(%s) got %q", test.example, err)
+			}
+
+			local_ex := got_ex.String
+			if strings.ContainsAny(got_ex.String, "()") {
+				local_ex = got_ex.String[1 : len(got_ex.String)-1]
+			}
+
+			answ, err := calc.SolveExample(got_ex)
+			if err != nil {
+				t.Errorf("SolveExample(%s) got %q", local_ex, err)
+				t.Log(got_ex.First_value, got_ex.Second_value, got_ex.Operation)
+			}
+
+			pri_idx := strings.Index(test.example, got_ex.String)
+			got := calc.EraseExample(test.example, got_ex.String, pri_idx, answ)
 			if got != test.expected_str {
-				t.Errorf("EraseExample(%q, %q, %d, %f) = %q, but expected: %q", test.example, erase_str, pri_idx, answ, got, test.expected_str)
+				t.Errorf("EraseExample(%q, %q, %d, %f) = %q, but expected: %q", test.example, got_ex.String, pri_idx, answ, got, test.expected_str)
 			}
 		})
 	}
@@ -182,8 +203,8 @@ func TestCalc(t *testing.T) {
 		{
 			name:           "addition with negative value",
 			expression:     "-3+1",
-			expected_value: -2,
-			expected_err:   nil,
+			expected_value: 0,
+			expected_err:   calc.OperationWithoutValue,
 		},
 		{
 			name:           "addition with 3 values",

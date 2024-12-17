@@ -44,6 +44,7 @@ func getValuesIdx(example_str string, operator_idx int) (first_value_idx int, se
 	first_value_idx, second_value_idx = operator_idx-1, operator_idx+1
 
 	if first_value_idx < 0 || second_value_idx > len(example_str) {
+		fmt.Println(example_str)
 		return 0, 0, OperationWithoutValue
 	}
 
@@ -85,20 +86,33 @@ func GetExampleNew(ex string) (Example, error) {
 	var operator_idx int
 
 	if strings.ContainsRune(ex, '(') || strings.ContainsRune(ex, ')') {
-		op_bracket, cl_bracket := strings.IndexRune(ex, '('), strings.LastIndexByte(ex, ')')
+		opened_bracket := strings.IndexRune(ex, '(')
+		closed_bracket := strings.IndexRune(ex, ')')
 
-		//TODO: Исправить не нахождение последней скобки
-		//* Пример ошибки: GetExample("(10+30+(20+1*10))+1") got "(10+30+(20+1*10)", but expected "(10+30+(20+1*10))"
-
-		if (op_bracket == -1 && cl_bracket != -1) || (op_bracket != -1 && cl_bracket == -1) {
+		if (opened_bracket == -1 && closed_bracket != -1) || (opened_bracket != -1 && closed_bracket == -1) {
 			return Example{}, BracketsNotFound
 		}
 
-		if cl_bracket == 0 || cl_bracket == op_bracket {
+		var count int
+		for i := opened_bracket + 1; i < len(ex); i++ {
+			if rune(ex[i]) == ')' && count == 0 {
+				closed_bracket = i
+				break
+			}
+
+			symbol := rune(ex[i])
+			if symbol == '(' {
+				count++
+			} else if symbol == ')' {
+				count--
+			}
+		}
+
+		if closed_bracket == opened_bracket {
 			return Example{}, BracketsNotFound
 		}
 
-		return Example{String: ex[op_bracket : cl_bracket+1]}, nil
+		return Example{String: ex[opened_bracket : closed_bracket+1]}, nil
 	}
 
 	operator_idx = strings.IndexAny(ex, "*/")
@@ -109,7 +123,8 @@ func GetExampleNew(ex string) (Example, error) {
 			if err != nil {
 				return Example{}, ParseError
 			}
-			return Example{Second_value: value, Operation: Equals}, nil
+			fmt.Println("end", value)
+			return Example{First_value: value, Operation: Equals}, nil
 		}
 	}
 
@@ -137,104 +152,6 @@ func GetExampleNew(ex string) (Example, error) {
 	return new_ex, nil
 }
 
-// TODO: Удалить нахер эту поеботу
-func GetExample(example string) (string, int, Example, error) {
-	var ex Example
-	var local_ex string = example
-
-	var begin, end int = -1, -1
-	if strings.ContainsRune(local_ex, '(') {
-		for i, rn := range local_ex {
-			if rn == '(' {
-				begin = i
-				continue
-			} else if rn == ')' {
-				end = i
-				break
-			}
-		}
-
-		if (begin == -1 && end != -1) || (begin != -1 && end == -1) {
-			return "", 0, Example{}, BracketsNotFound
-		}
-
-		local_ex = local_ex[begin : end+1]
-	}
-
-	var actionIdx int
-	if op := "*/"; strings.ContainsAny(local_ex, op) {
-		actionIdx = strings.IndexAny(local_ex, op)
-	} else if op := "+-"; strings.ContainsAny(local_ex, op) {
-		actionIdx = strings.IndexAny(local_ex, op)
-	} else if strings.ContainsAny(local_ex, "()") {
-		value, err := strconv.ParseFloat(local_ex[1:len(local_ex)-1], 64)
-		if err != nil {
-			return "", 0, Example{}, ParseError
-		}
-		return local_ex[:], strings.IndexRune(example, rune(local_ex[0])), Example{First_value: value, Second_value: 52, Operation: Equals}, nil //52 - по рофлу, чтобы при калькулировании не возникала ошибка. Крч костыль
-	} else {
-		value, err := strconv.ParseFloat(local_ex, 64)
-		if err != nil {
-			return "", 0, Example{}, ParseError
-		}
-		return "end", 0, Example{First_value: value, Second_value: 52, Operation: Equals}, nil
-	}
-
-	if actionIdx == 0 || actionIdx == len(local_ex)-1 {
-		return "", 0, Example{}, OperationWithoutValue
-	}
-
-	ex.Operation = Operator(local_ex[actionIdx])
-
-	//Нахождение концов двух чисел
-	var exampleLen = len(local_ex)
-	if actionIdx == 0 || actionIdx == exampleLen-1 {
-
-		//TODO: Изменить вывод ошибки на вывод с использованием переменной
-
-		return "", 0, Example{}, errors.New("action in first or lst place")
-	}
-
-	var err error
-	for i := actionIdx - 1; i >= 0; i-- {
-		if strings.ContainsRune("+-/*()", rune(local_ex[i])) {
-			ex.First_value, err = strconv.ParseFloat(local_ex[i+1:actionIdx], 64)
-			if err != nil {
-				return "", 0, Example{}, ParseError
-			}
-			begin = i + 1
-			break
-		} else if i == 0 {
-			ex.First_value, err = strconv.ParseFloat(local_ex[i:actionIdx], 64)
-			if err != nil {
-				return "", 0, Example{}, ParseError
-			}
-			begin = i
-			break
-		}
-	}
-
-	for i := actionIdx + 1; i < exampleLen; i++ {
-		if strings.ContainsRune("+-/*()", rune(local_ex[i])) {
-			ex.Second_value, err = strconv.ParseFloat(local_ex[actionIdx+1:i], 64)
-			if err != nil {
-				return "", 0, Example{}, ParseError
-			}
-			end = i
-			break
-		} else if i+1 == exampleLen {
-			ex.Second_value, err = strconv.ParseFloat(local_ex[actionIdx+1:i+1], 64)
-			if err != nil {
-				return "", 0, Example{}, ParseError
-			}
-			end = exampleLen
-			break
-		}
-	}
-
-	return local_ex[begin:end], strings.IndexRune(example, rune(local_ex[0])), ex, nil
-}
-
 func SolveExample(ex Example) (float64, error) {
 	if ex.Second_value == 0 && ex.Operation == Division {
 		return 0, DivideByZero
@@ -259,26 +176,54 @@ func EraseExample(example, erase_ex string, pri_idx int, answ float64) string {
 	return example[:pri_idx] + strings.Replace(example[pri_idx:], erase_ex, fmt.Sprintf("%f", answ), 1)
 }
 
-func Calc(expression string) (result float64, err error) {
+func Calc(expression string) (float64, error) {
 	if expression == "" {
 		return 0, ExpressionEmpty
 	}
 
+	var ex_with_brackets string
+	ex_to_solve := expression
+	local_ex := ex_to_solve
+
 	for {
-		ex_str, pri_idx, example, err := GetExample(expression)
+		fmt.Println("[LOG] ex_with_brackets:", ex_with_brackets, "local_ex in brackets:", local_ex)
+		ex, err := GetExampleNew(local_ex)
 		if err != nil {
 			return 0, err
 		}
 
-		result, _ = SolveExample(example)
+		local_ex = ex.String
 
-		if ex_str == "end" {
-			break
+		if strings.ContainsAny(local_ex, "()") {
+			ex_with_brackets = local_ex
+			ex_to_solve = ex_with_brackets[1 : len(ex_with_brackets)-1]
+			local_ex = ex_to_solve
+			fmt.Println("[LOG] ex_with_brackets:", ex_with_brackets, "ex_to_solve in brackets:", ex_to_solve)
+			continue
 		}
 
-		expression = EraseExample(expression, ex_str, pri_idx, result)
-	}
-	return
-}
+		answ, err := SolveExample(ex)
+		if err != nil {
+			return 0, err
+		}
 
-func main() {}
+		if ex.Operation == Equals && ex_with_brackets == "" {
+			fmt.Println("ret", ex.Operation)
+			return answ, nil
+		}
+
+		var idx_str int
+		if ex_with_brackets != "" {
+			idx_str = strings.Index(expression, ex_with_brackets)
+		} else {
+			idx_str = strings.Index(expression, local_ex)
+		}
+
+		if idx_str == -1 {
+			return 0, UnexpextedError
+		}
+
+		expression = EraseExample(expression, local_ex, idx_str, answ)
+		local_ex = expression
+	}
+}
