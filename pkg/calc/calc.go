@@ -43,6 +43,10 @@ If index first and second value = operator index - return error (OperationWithou
 func getValuesIdx(example_str string, operator_idx int) (first_value_idx int, second_value_idx int, err error) {
 	first_value_idx, second_value_idx = operator_idx-1, operator_idx+1
 
+	if first_value_idx < 0 || second_value_idx > len(example_str) {
+		return 0, 0, OperationWithoutValue
+	}
+
 	// Get first value index
 	for ; first_value_idx != 0; first_value_idx-- {
 		ex_rune := example_str[first_value_idx]
@@ -81,12 +85,16 @@ func GetExampleNew(ex string) (Example, error) {
 	var operator_idx int
 
 	if strings.ContainsRune(ex, '(') || strings.ContainsRune(ex, ')') {
-		op_bracket, cl_bracket := strings.IndexRune(ex, '('), strings.IndexRune(ex, ')')
+		op_bracket, cl_bracket := strings.IndexRune(ex, '('), strings.LastIndexByte(ex, ')')
 
 		//TODO: Исправить не нахождение последней скобки
 		//* Пример ошибки: GetExample("(10+30+(20+1*10))+1") got "(10+30+(20+1*10)", but expected "(10+30+(20+1*10))"
 
 		if (op_bracket == -1 && cl_bracket != -1) || (op_bracket != -1 && cl_bracket == -1) {
+			return Example{}, BracketsNotFound
+		}
+
+		if cl_bracket == 0 || cl_bracket == op_bracket {
 			return Example{}, BracketsNotFound
 		}
 
